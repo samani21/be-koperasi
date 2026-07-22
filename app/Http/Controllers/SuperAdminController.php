@@ -275,4 +275,30 @@ class SuperAdminController extends Controller
             return $this->apiService->error('Gagal menghapus! Akun ini mungkin masih terikat dengan data transaksi aktif.', 409);
         }
     }
+
+    public function toggleStatus($id)
+    {
+        try {
+            $user = User::find($id);
+
+            if (!$user) {
+                return $this->apiService->error('Akun tidak ditemukan', 404);
+            }
+
+            //  Cegah Super Admin menonaktifkan dirinya sendiri (Harakiri)
+            if ($user->id === auth()->guard('api')->id()) {
+                return $this->apiService->error('Anda tidak dapat menonaktifkan akun Anda sendiri!', 403);
+            }
+
+            // Balikkan status (Jika true jadi false, jika false jadi true)
+            $user->is_active = !$user->is_active;
+            $user->save();
+
+            $pesan = $user->is_active ? 'diaktifkan' : 'dinonaktifkan (diblokir dari login)';
+            return $this->apiService->successWithData($user, "Akun berhasil $pesan");
+        } catch (\Exception $e) {
+            Log::error('Gagal toggle status akun ID ' . $id . ': ' . $e->getMessage());
+            return $this->apiService->error('Terjadi kesalahan pada server saat mengubah status.', 500);
+        }
+    }
 }

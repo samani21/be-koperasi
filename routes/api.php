@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
-    Route::get('me', [AuthController::class, 'me']);
+    Route::middleware(['active'])->get('me', [AuthController::class, 'me']);
 });
 
 
@@ -18,6 +18,7 @@ Route::middleware(['role:superadmin', 'active'])->prefix('super-admin')->group(f
         Route::post('/', [SuperAdminController::class, 'store']);
         Route::post('/{id}', [SuperAdminController::class, 'update']);
         Route::delete('/{id}', [SuperAdminController::class, 'destroy']);
+        Route::patch('/{id}/toggle-status', [SuperAdminController::class, 'toggleStatus']);
     });
     Route::get('member', [MemberController::class, 'index']);
 });
