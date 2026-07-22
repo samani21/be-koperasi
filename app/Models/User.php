@@ -45,6 +45,13 @@ class User extends Authenticatable
         ];
     }
 
+
+    public function member()
+    {
+        return $this->hasOne(Member::class);
+    }
+
+
     public function getJWTIdentifier()
     {
         return $this->getKey();
