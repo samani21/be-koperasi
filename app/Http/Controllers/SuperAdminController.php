@@ -16,12 +16,12 @@ class SuperAdminController extends Controller
     public function dashboardStats(Request $request)
     {
         // Ambil filter tanggal dari React, set default ke 7 hari terakhir
-        $startDate = $request->query('start_date', Carbon::now()->subDays(6)->toDateString());
-        $endDate = $request->query('end_date', Carbon::now()->toDateString());
+        $startDate = $request->query('start_date', \Carbon\Carbon::now()->subDays(6)->toDateString());
+        $endDate = $request->query('end_date', \Carbon\Carbon::now()->toDateString());
 
         // Pastikan format tanggal valid
-        $start = Carbon::parse($startDate)->startOfDay();
-        $end = Carbon::parse($endDate)->endOfDay();
+        $start = \Carbon\Carbon::parse($startDate)->startOfDay();
+        $end = \Carbon\Carbon::parse($endDate)->endOfDay();
 
         // Hitung selisih hari
         $diffDays = (int) $start->diffInDays($end);
@@ -52,7 +52,7 @@ class SuperAdminController extends Controller
 
             while ($currentDate <= $end) {
                 $chartData[] = [
-                    'name' => $daysMap[$currentDate->format('D')], // Sen, Sel...
+                    'name' => $daysMap[$currentDate->format('D')],
                     'total' => $membersQuery[$currentDate->toDateString()] ?? 0,
                     'type' => 'Pendaftaran Anggota'
                 ];
@@ -61,7 +61,6 @@ class SuperAdminController extends Controller
         }
         // KONDISI 2: TAMPILAN MINGGUAN (8 - 31 Hari)
         elseif ($diffDays <= 31) {
-            // Ambil semua data per hari terlebih dahulu
             $membersQuery = User::where('role', 'member')
                 ->whereBetween('created_at', [$start, $end])
                 ->selectRaw('DATE(created_at) as date, COUNT(*) as count')
@@ -71,19 +70,15 @@ class SuperAdminController extends Controller
             $totalWeeks = ceil(($diffDays === 0 ? 1 : $diffDays) / 7);
             $currentDate = $start->copy();
 
-            // Lakukan grouping manual setiap 7 hari (1 Minggu)
             for ($i = 1; $i <= $totalWeeks; $i++) {
                 $weekTotal = 0;
-
-                // Tambahkan total dari 7 hari ke dalam 1 minggu tersebut
                 for ($d = 0; $d < 7; $d++) {
-                    if ($currentDate > $end) break; // Berhenti jika melebihi batas akhir
+                    if ($currentDate > $end) break;
                     $weekTotal += $membersQuery[$currentDate->toDateString()] ?? 0;
                     $currentDate->addDay();
                 }
-
                 $chartData[] = [
-                    'name' => "Mng $i", // Mng 1, Mng 2...
+                    'name' => "Mng $i",
                     'total' => $weekTotal,
                     'type' => 'Pendaftaran Anggota'
                 ];
@@ -100,7 +95,6 @@ class SuperAdminController extends Controller
             $currentDate = $start->copy()->startOfMonth();
             $endLoop = $end->copy()->endOfMonth();
 
-            // Nama bulan ala Indonesia
             $monthsMap = [
                 '01' => 'Jan',
                 '02' => 'Feb',
@@ -117,12 +111,11 @@ class SuperAdminController extends Controller
             ];
 
             while ($currentDate <= $endLoop) {
-                $dateString = $currentDate->format('Y-m'); // "2024-01"
-                $monthNum = $currentDate->format('m'); // "01"
-                $year = $currentDate->format('y'); // "24"
+                $dateString = $currentDate->format('Y-m');
+                $monthNum = $currentDate->format('m');
+                $year = $currentDate->format('y');
 
                 $chartData[] = [
-                    // Format output: Jan 24 (supaya beda kalau ada cross tahun)
                     'name' => $monthsMap[$monthNum] . " " . $year,
                     'total' => $membersQuery[$dateString] ?? 0,
                     'type' => 'Pendaftaran Anggota'
@@ -131,12 +124,19 @@ class SuperAdminController extends Controller
             }
         }
 
+        // Ambil 10 Member Terbaru ---
+        $recentMembers = Member::with('user:id,email,is_active,nik')
+            ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get();
+
         $data = [
             'stats' => [
                 'total_member' => $totalMember,
                 'total_fo' => $totalFO,
             ],
-            'chartData' => $chartData
+            'chartData' => $chartData,
+            'recent_members' => $recentMembers
         ];
 
         return $this->apiService->successWithData($data, 'Data dashboard berhasil diambil', 200);
