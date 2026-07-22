@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\FrontOfficeController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\SuperAdminController;
 use Illuminate\Support\Facades\Route;
@@ -21,4 +22,8 @@ Route::middleware(['role:superadmin', 'active'])->prefix('super-admin')->group(f
         Route::patch('/{id}/toggle-status', [SuperAdminController::class, 'toggleStatus']);
     });
     Route::get('member', [MemberController::class, 'index']);
+});
+
+Route::middleware(['role:frontoffice', 'active'])->prefix('front-office')->group(function () {
+    Route::get('dashboard', [FrontOfficeController::class, 'dashboard']);
 });
