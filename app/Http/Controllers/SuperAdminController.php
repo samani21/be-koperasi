@@ -6,6 +6,7 @@ use App\Models\Member;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -180,7 +181,7 @@ class SuperAdminController extends Controller
             'email'    => 'required|string|email|max:255|unique:users',
             'password' => 'nullable|string|min:6', // Boleh kosong
         ]);
-        $user = auth()->user();
+        $user = Auth::guard('api')->user();
         if ($user->role != 'superadmin') {
             return $this->apiService->error('tidak bisa nambah data', 401);
         }

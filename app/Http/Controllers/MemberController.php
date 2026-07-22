@@ -6,6 +6,7 @@ use App\Models\Member;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -51,6 +52,21 @@ class MemberController extends Controller
             Log::error('Gagal mengambil list Member: ' . $e->getMessage());
             return $this->apiService->error('Terjadi kesalahan pada server saat mengambil data.', 500);
         }
+    }
+
+    public function show(Request $request)
+    {
+        $user = Auth::guard('api')->user();
+
+        // 1. Ambil data member beserta relasi user
+        $member = Member::with('user:id,name,email,is_active')->where('user_id', $user->id)->first();
+
+        // 2. Pengecekan jika data member belum ada/tidak ditemukan
+        if (!$member) {
+            return $this->apiService->error('Data Member tidak ditemukan', 404);
+        }
+
+        return $this->apiService->successWithData($member, 'Data Member berhasil diambil');
     }
 
     public function store(Request $request)
@@ -141,19 +157,18 @@ class MemberController extends Controller
 
             DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Member berhasil ditambahkan',
-                'data'    => $member->load('user')
-            ], 201);
+
+            return $this->apiService->successWithData($member->load('user'), 'Member berhasil ditambahkan');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $firstError = $e->validator->errors()->first();
+            return $this->apiService->errorResponse($firstError, 422, $e->errors());
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal menambahkan member: ' . $e->getMessage()
-            ], 500);
+            return $this->apiService->errorResponse('Gagal menambahkan member: ' . $e->getMessage(), 500);
         }
     }
+
+
 
     public function update(Request $request, $id)
     {
@@ -237,26 +252,14 @@ class MemberController extends Controller
             ]);
 
             DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Data Anggota berhasil diperbarui',
-                'data'    => $member->load('user')
-            ], 200);
+            return $this->apiService->successWithData($member->load('user'), 'Data Anggota berhasil diperbarui');
         } catch (\Illuminate\Validation\ValidationException $e) {
             $firstError = $e->validator->errors()->first();
-            return response()->json([
-                'success' => false,
-                'message' => 'Validasi gagal: ' . $firstError,
-                'errors'  => $e->errors()
-            ], 422);
+            return $this->apiService->errorResponse($firstError, 422, $e->errors());
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Gagal update Member: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal memperbarui data: ' . $e->getMessage()
-            ], 500);
+            return $this->apiService->errorResponse('Gagal memperbarui data: ' . $e->getMessage(), 500);
         }
     }
 
@@ -286,17 +289,11 @@ class MemberController extends Controller
 
             DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Data Anggota beserta foto berhasil dihapus permanen'
-            ], 200);
+            return $this->apiService->success('Data Anggota beserta foto berhasil dihapus permanen');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Gagal hapus Member: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal menghapus data: ' . $e->getMessage()
-            ], 500);
+            return $this->apiService->errorResponse('Gagal menghapus data: ' . $e->getMessage(), 500);
         }
     }
 }

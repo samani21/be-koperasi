@@ -28,9 +28,14 @@ Route::middleware(['role:frontoffice', 'active'])->prefix('front-office')->group
     Route::get('dashboard', [FrontOfficeController::class, 'dashboard']);
     Route::prefix('member')->group(function () {
         Route::get('/', [MemberController::class, 'index']);
+        Route::get('/show', [MemberController::class, 'show']);
         Route::post('/', [MemberController::class, 'store']);
         Route::post('/{id}', [MemberController::class, 'update']);
         Route::delete('/{id}', [MemberController::class, 'destroy']);
-        // Route::patch('/{id}/toggle-status', [MemberController::class, 'toggleStatus']);
     });
+});
+
+Route::middleware(['role:member', 'active'])->prefix('member')->group(function () {
+    Route::get('/show', [MemberController::class, 'show']);
+    Route::post('/{id}', [MemberController::class, 'update']);
 });
