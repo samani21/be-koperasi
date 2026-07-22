@@ -59,7 +59,7 @@ class MemberController extends Controller
         $user = Auth::guard('api')->user();
 
         // 1. Ambil data member beserta relasi user
-        $member = Member::with('user:id,name,email,is_active')->where('user_id', $user->id)->first();
+        $member = Member::with('user:id,name,email,is_active,nik')->where('user_id', $user->id)->first();
 
         // 2. Pengecekan jika data member belum ada/tidak ditemukan
         if (!$member) {
@@ -74,7 +74,7 @@ class MemberController extends Controller
         // 1. Tambahkan validasi photo (opsional, harus gambar, max 2MB)
         $request->validate([
             'nik'       => 'required|string|unique:users,nik',
-            'email'     => 'nullable|email|unique:users,email',
+            'email'     => 'required|email|unique:users,email',
             'password'  => 'nullable|min:6',
             'full_name' => 'required|string|max:255',
             'phone'     => 'nullable|string|max:20',

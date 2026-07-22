@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 
 class SuperAdminController extends Controller
 {
@@ -150,7 +151,7 @@ class SuperAdminController extends Controller
 
             // Eksekusi query dengan paginate
             $frontOffices = User::where('role', 'frontoffice')
-                ->when($request->query('search'), function ($query, $name) {
+                ->when($request->query('name'), function ($query, $name) {
                     return $query->where('name', 'like', '%' . $name . '%');
                 })
                 ->orderBy('created_at', 'desc')
@@ -186,7 +187,7 @@ class SuperAdminController extends Controller
             return $this->apiService->error('tidak bisa nambah data', 401);
         }
         if ($validator->fails()) {
-            return $this->apiService->error('Periksa kembali inputan Anda.', 422, $validator->errors());
+            return $this->apiService->error($validator->errors()->first(), 422, $validator->errors()->first());
         }
 
         DB::beginTransaction();
@@ -205,6 +206,9 @@ class SuperAdminController extends Controller
 
             DB::commit();
             return $this->apiService->successWithData($frontOffice, 'Akun Front Office berhasil dibuat', 201);
+        } catch (ValidationException $e) {
+            $firstError = $e->validator->errors()->first();
+            return $this->apiService->errorResponse($firstError, 422, $e->errors());
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Gagal membuat FO baru: ' . $e->getMessage());
@@ -248,6 +252,9 @@ class SuperAdminController extends Controller
 
             DB::commit();
             return $this->apiService->successWithData($frontOffice, 'Data Front Office berhasil diperbarui');
+        } catch (ValidationException $e) {
+            $firstError = $e->validator->errors()->first();
+            return $this->apiService->errorResponse($firstError, 422, $e->errors());
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Gagal update FO ID ' . $id . ': ' . $e->getMessage());
