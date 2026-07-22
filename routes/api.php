@@ -26,4 +26,11 @@ Route::middleware(['role:superadmin', 'active'])->prefix('super-admin')->group(f
 
 Route::middleware(['role:frontoffice', 'active'])->prefix('front-office')->group(function () {
     Route::get('dashboard', [FrontOfficeController::class, 'dashboard']);
+    Route::prefix('member')->group(function () {
+        Route::get('/', [MemberController::class, 'index']);
+        Route::post('/', [MemberController::class, 'store']);
+        Route::post('/{id}', [MemberController::class, 'update']);
+        Route::delete('/{id}', [MemberController::class, 'destroy']);
+        // Route::patch('/{id}/toggle-status', [MemberController::class, 'toggleStatus']);
+    });
 });
