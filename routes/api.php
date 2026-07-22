@@ -19,4 +19,5 @@ Route::middleware(['role:superadmin', 'active'])->prefix('super-admin')->group(f
         Route::post('/{id}', [SuperAdminController::class, 'update']);
         Route::delete('/{id}', [SuperAdminController::class, 'destroy']);
     });
+    Route::get('member', [MemberController::class, 'index']);
 });
